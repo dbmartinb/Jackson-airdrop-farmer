@@ -41,8 +41,8 @@ async function generateWalletFleet(): Promise<void> {
   spinner.succeed(`Generated ${wallets.length} wallets`);
 
   console.log();
-  console.log(chalk.red.bold("WARNING: Back up this mnemonic phrase! It cannot be recovered."));
-  console.log(chalk.yellow.bold(mnemonic));
+  console.log(chalk.red.bold("WARNING: Your mnemonic is encrypted in data/wallets.enc.json."));
+  console.log(chalk.yellow("Back up that file and your ENCRYPTION_KEY securely — both are required to recover funds."));
   console.log();
 
   log.divider();

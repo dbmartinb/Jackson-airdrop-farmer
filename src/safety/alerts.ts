@@ -3,6 +3,17 @@ import { log } from "../utils/logger.js";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 
+// Rate limit: max 1 alert per minute per message hash
+const RATE_LIMIT_MS = 60_000;
+const recentAlerts = new Map<string, number>();
+
+function isRateLimited(key: string): boolean {
+  const last = recentAlerts.get(key) ?? 0;
+  if (Date.now() - last < RATE_LIMIT_MS) return true;
+  recentAlerts.set(key, Date.now());
+  return false;
+}
+
 const LEVEL_EMOJI: Record<string, string> = {
   info: "\u2139\uFE0F",      // info
   warn: "\u26A0\uFE0F",      // warning
@@ -25,6 +36,10 @@ export async function sendAlert(
 
   // Send to Telegram if configured
   if (!BOT_TOKEN || !CHAT_ID) return;
+
+  // Rate limit per message content to avoid alert storms
+  const key = `${level}:${message.slice(0, 100)}`;
+  if (isRateLimited(key)) return;
 
   const emoji = LEVEL_EMOJI[level] || "";
   const text = `${emoji} *Airdrop Farmer*\n\n${message}`;

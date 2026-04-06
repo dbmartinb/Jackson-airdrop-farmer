@@ -19,6 +19,7 @@ import {
   getPTBalance,
   PENDLE_MARKETS,
 } from "../protocols/pendle.js";
+import { revokeAllowance, getSpenderForTask } from "../safety/approval-guard.js";
 import {
   generatePersonality,
   shouldBeActive,
@@ -123,6 +124,30 @@ function resolveToken(chain: string, symbol: string): string {
   return addr;
 }
 
+/** Retry a task up to maxAttempts times with exponential backoff */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  baseDelayMs = 10_000,
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const isTransient =
+        err instanceof Error &&
+        /timeout|rate.limit|network|econnreset|503|429/i.test(err.message);
+      if (!isTransient || attempt === maxAttempts) throw err;
+      const delay = baseDelayMs * attempt;
+      log.warn(`Attempt ${attempt}/${maxAttempts} failed, retrying in ${delay / 1000}s: ${err instanceof Error ? err.message : String(err)}`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
 /** Execute a single task and return the result */
 export async function executeTask(
   privateKey: string,
@@ -197,7 +222,7 @@ export async function executeTask(
         }
 
         if (protocol === "uniswap-v3") {
-          txHash = await swapExactInput(
+          txHash = await withRetry(() => swapExactInput(
             signer,
             tokenIn,
             tokenOut,
@@ -205,19 +230,27 @@ export async function executeTask(
             3000,
             0.5,
             chain,
-          );
+          ));
         } else if (protocol === "ambient") {
-          txHash = await swapAmbient(signer, chain, tokenIn, tokenOut, amount);
+          txHash = await withRetry(() => swapAmbient(signer, chain, tokenIn, tokenOut, amount));
         } else if (protocol === "velodrome" || protocol === "aerodrome") {
-          txHash = await swapVelodrome(
+          txHash = await withRetry(() => swapVelodrome(
             signer,
             chain,
             tokenIn,
             tokenOut,
             amount,
-          );
+          ));
         } else {
-          txHash = await swapSyncSwap(signer, chain, tokenIn, tokenOut, amount);
+          txHash = await withRetry(() => swapSyncSwap(signer, chain, tokenIn, tokenOut, amount));
+        }
+
+        // Revoke token approval after swap to minimise outstanding allowances
+        if (tokenInSymbol.toUpperCase() !== "ETH") {
+          const spender = getSpenderForTask(chain, protocol);
+          if (spender) {
+            await revokeAllowance(signer, tokenIn, spender).catch(() => {});
+          }
         }
         break;
       }

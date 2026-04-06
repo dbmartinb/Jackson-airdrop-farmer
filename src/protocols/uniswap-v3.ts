@@ -53,9 +53,10 @@ export async function swapExactInput(
     tokenIn.toLowerCase() === BASE_TOKENS.WETH.toLowerCase() ||
     // Check if tokenIn is the native wrapped token for this chain (not just Base's WETH)
     tokenIn.toLowerCase() === tokenIn.toLowerCase();
-  // Set amountOutMinimum to 0 — different token decimals make ratio-based slippage unreliable
-  // For small farming amounts this is acceptable; a MEV sandwich on $2 is not economical
-  const amountOutMinimum = 0n;
+  // Apply slippage tolerance: amountOutMinimum = amountIn * (1 - slippagePct/100)
+  // Rough approximation but provides MEV sandwich protection for round-trip swaps
+  const slippageFactor = BigInt(Math.floor((1 - slippagePct / 100) * 10_000));
+  const amountOutMinimum = (amountIn * slippageFactor) / 10_000n;
 
   // Determine if we're sending native ETH (tokenIn is the chain's wrapped native token)
   const WETH_LIKE = new Set([
