@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { loadWallets, getPrivateKey } from "./wallet-manager.js";
 import { getProvider } from "./chains/index.js";
 import { safeExecuteTask, sendSessionSummary } from "./safety/index.js";
+import { detectAirdrops } from "./safety/airdrop-detector.js";
 import {
   generatePersonality,
   shouldBeActive,
@@ -456,6 +457,9 @@ async function main(): Promise<void> {
   // Send Telegram summary
   const chains = [...new Set(selected.map((s) => s.chain))];
   await sendSessionSummary(totalTasks, totalSuccess, chains, 0).catch(() => {});
+
+  // Scan all chains for unexpected tokens (airdrops)
+  await detectAirdrops(L2_CHAINS).catch(() => {});
 }
 
 main().catch((err) => {
