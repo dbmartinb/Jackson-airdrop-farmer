@@ -23,6 +23,9 @@ interface WalletStore {
 }
 
 function loadStore(): WalletStore {
+  if (process.env.WALLETS_JSON) {
+    return JSON.parse(process.env.WALLETS_JSON);
+  }
   if (!existsSync(WALLET_FILE)) {
     return { encryptedMnemonic: null, wallets: [] };
   }
