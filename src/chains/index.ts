@@ -117,6 +117,23 @@ const chains: Record<string, ChainConfig> = {
     nativeCurrency: "ETH",
     isL2: true,
   },
+  ink: {
+    name: "Ink",
+    chainId: 57073,
+    rpcUrl: process.env.RPC_INK || "https://rpc-gel.inkonchain.com",
+    explorerUrl: "https://explorer.inkonchain.com",
+    nativeCurrency: "ETH",
+    isL2: true,
+    bridgeContract: ethers.getAddress("0x88ff1e5b602916615391f55854588efcbb7663f0"),
+  },
+  berachain: {
+    name: "Berachain",
+    chainId: 80094,
+    rpcUrl: process.env.RPC_BERACHAIN || "https://rpc.berachain.com",
+    explorerUrl: "https://berascan.com",
+    nativeCurrency: "BERA",
+    isL2: true,
+  },
 };
 
 const providerCache = new Map<string, ethers.JsonRpcProvider>();

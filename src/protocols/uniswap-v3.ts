@@ -10,6 +10,7 @@ const SWAP_ROUTER_ADDRESSES: Record<string, string> = {
   monad: ethers.getAddress("0xfe31f71c1b106eac32f1a19239c9a9a72ddfb900"),
   abstract: ethers.getAddress("0x7712FA47387542819d4E35A23f8116C90C18767C"),
   unichain: ethers.getAddress("0x73855d06de49d0fe4a9c42636ba96c62da12ff9c"),
+  berachain: ethers.getAddress("0xe301E48F77963D3F7DbD2a4796962Bd7f3867Fb4"), // Kodiak V3
 };
 
 export const BASE_TOKENS: Record<string, string> = {

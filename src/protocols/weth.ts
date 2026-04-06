@@ -11,6 +11,9 @@ const WETH_ADDRESSES: Record<string, string> = {
   megaeth: ethers.getAddress("0x4200000000000000000000000000000000000006"),
   monad: ethers.getAddress("0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A"), // WMON
   abstract: ethers.getAddress("0x3439153EB7AF838Ad19d56E1571FBD09333C2809"),
+  unichain: ethers.getAddress("0x4200000000000000000000000000000000000006"),
+  ink: ethers.getAddress("0x4200000000000000000000000000000000000006"),
+  berachain: ethers.getAddress("0x6969696969696969696969696969696969696969"), // WBERA
 };
 
 const WETH_ABI = [

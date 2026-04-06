@@ -114,6 +114,14 @@ const TOKEN_ADDRESSES: Record<string, Record<string, string>> = {
     ETH: ethers.getAddress("0x4200000000000000000000000000000000000006"),
     USDC: ethers.getAddress("0x078d782b760474a361dda0af3839290b0ef57ad6"),
   },
+  ink: {
+    ETH: ethers.getAddress("0x4200000000000000000000000000000000000006"),
+    USDC: ethers.getAddress("0x2d270e6886d130d724215a266106e6832161eaed"),
+  },
+  berachain: {
+    ETH: ethers.getAddress("0x6969696969696969696969696969696969696969"), // WBERA
+    USDC: ethers.getAddress("0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce"), // HONEY
+  },
 };
 
 function resolveToken(chain: string, symbol: string): string {

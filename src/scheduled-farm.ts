@@ -39,6 +39,8 @@ const L2_CHAINS = [
   "megaeth",
   "abstract",
   "unichain",
+  "ink",
+  "berachain",
 ];
 
 /** DEX protocol per chain */
@@ -52,6 +54,8 @@ const DEX_PROTOCOL: Record<string, string> = {
   megaeth: "megaeth-native", // No established DEX yet — wrap/deploy only for now
   abstract: "uniswap-v3",
   unichain: "uniswap-v3",
+  ink: "ink-native",        // DEX router unverified — wrap/deploy only for now
+  berachain: "uniswap-v3",  // Kodiak V3 (Uniswap V3 compatible)
 };
 
 /** Alternate DEX per chain (for diversity) */
@@ -118,7 +122,13 @@ const SWAP_CHAINS = new Set([
   "optimism",
   "abstract",
   "unichain",
+  "berachain",
 ]);
+
+/** Chains that use a non-USDC stablecoin for swaps */
+const ALT_STABLE: Record<string, string> = {
+  berachain: "USDC", // HONEY mapped as USDC in token addresses
+};
 
 /** Pick a random set of 2-5 tasks for a chain */
 function pickTasks(chain: string): Task[] {
@@ -126,15 +136,13 @@ function pickTasks(chain: string): Task[] {
   const doSwapRoundTrip = canSwap && Math.random() < 0.6;
   const doWrapUnwrap = Math.random() < 0.7;
   // Higher deploy rate on new chains — contract deploys are high-signal for airdrops
-  const doDeploy =
-    chain === "megaeth" || chain === "abstract" || chain === "unichain"
-      ? Math.random() < 0.4
-      : Math.random() < 0.12;
+  const newChains = new Set(["megaeth", "abstract", "unichain", "ink", "berachain"]);
+  const doDeploy = newChains.has(chain) ? Math.random() < 0.4 : Math.random() < 0.12;
   const doAave = AAVE_CHAINS.has(chain) && Math.random() < 0.3;
   const doAltDex = ALT_DEX[chain] && Math.random() < 0.25;
   // Only bridge between established L2s (not new chains yet)
   const doOrbiterBridge =
-    chain !== "megaeth" && chain !== "abstract" && Math.random() < 0.15;
+    !newChains.has(chain) && Math.random() < 0.15;
   const doZoraMint = chain === "base" && Math.random() < 0.1;
 
   const protocol = DEX_PROTOCOL[chain];
@@ -149,23 +157,25 @@ function pickTasks(chain: string): Task[] {
     });
   }
 
-  // MegaETH has no established DEX yet — skip swaps
-  if (doSwapRoundTrip && protocol !== "megaeth-native") {
+  // Skip swaps on chains without verified DEX routers
+  const noSwapChains = new Set(["megaeth-native", "ink-native"]);
+  if (doSwapRoundTrip && !noSwapChains.has(protocol)) {
     const dex = doAltDex ? ALT_DEX[chain] : protocol;
+    const stable = ALT_STABLE[chain] ?? "USDC";
     tasks.push(
       {
         type: "dex_swap",
         chain,
         protocol: dex,
-        params: { tokenIn: "ETH", tokenOut: "USDC" },
-        description: `Swap ETH → USDC on ${chain} (${dex})`,
+        params: { tokenIn: "ETH", tokenOut: stable },
+        description: `Swap ETH → ${stable} on ${chain} (${dex})`,
       },
       {
         type: "dex_swap",
         chain,
         protocol: dex,
-        params: { tokenIn: "USDC", tokenOut: "ETH" },
-        description: `Swap USDC → ETH on ${chain} (${dex})`,
+        params: { tokenIn: stable, tokenOut: "ETH" },
+        description: `Swap ${stable} → ETH on ${chain} (${dex})`,
       },
     );
   }
