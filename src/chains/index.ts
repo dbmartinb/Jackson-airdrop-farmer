@@ -151,7 +151,10 @@ export function getProvider(chain: string): ethers.JsonRpcProvider {
   const key = chain.toLowerCase();
   if (!providerCache.has(key)) {
     const config = getChain(key);
-    providerCache.set(key, new ethers.JsonRpcProvider(config.rpcUrl));
+    // staticNetwork prevents ethers from auto-polling for network detection,
+    // which causes noisy retry logs when an RPC is slow or unreachable
+    const network = ethers.Network.from(config.chainId);
+    providerCache.set(key, new ethers.JsonRpcProvider(config.rpcUrl, network, { staticNetwork: network }));
   }
   return providerCache.get(key)!;
 }
